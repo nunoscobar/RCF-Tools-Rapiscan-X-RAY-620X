@@ -26,3 +26,4 @@ Files are grouped by folder or by acquisition date, parsed from the file name <d
 
 Prints a smoothness score per file; a high score means the encoding differs from the validated one.
 the output files is in the same folder.
+![This is a screenshot of viewer.html](viewer.html.png)
