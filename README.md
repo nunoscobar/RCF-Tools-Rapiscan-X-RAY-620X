@@ -21,7 +21,7 @@ Files are grouped by folder or by acquisition date, parsed from the file name <d
 
 ## Decoder
 
-`pip install numpy pillow`
+`pip install numpy pillow` <br>
 `python decode.py path/to/`
 
 Prints a smoothness score per file; a high score means the encoding differs from the validated one.
