@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Visualizador de Imagens RCF</title>
+
+  <!-- Bootstrap 5.3 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+      --panel-bg: rgba(30, 41, 59, 0.75);
+      --panel-border: rgba(148, 163, 184, 0.15);
+      --accent: #38bdf8;
+      --accent-soft: rgba(56, 189, 248, 0.15);
+      --text-muted: #94a3b8;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    body {
+      background: var(--bg-gradient);
+      background-attachment: fixed;
+      color: #e2e8f0;
+      overflow-x: hidden;
+    }
+
+    /* Fundo decorativo */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(circle at 15% 20%, rgba(56, 189, 248, 0.10), transparent 45%),
+        radial-gradient(circle at 85% 80%, rgba(139, 92, 246, 0.10), transparent 45%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .app-wrapper {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 1.25rem;
+    }
+
+    /* Header */
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+      padding: 1rem 1.5rem;
+      margin-bottom: 1.25rem;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 1rem;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+    }
+
+    .brand-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, #38bdf8, #6366f1);
+      color: #0f172a;
+      font-size: 1.35rem;
+      box-shadow: 0 4px 16px rgba(56, 189, 248, 0.4);
+    }
+
+    .brand-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin: 0;
+      background: linear-gradient(135deg, #f1f5f9, #94a3b8);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-subtitle {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin: 0;
+    }
+
+    /* Botão selecionar pasta */
+    .btn-pick-folder {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.6rem 1.15rem;
+      border-radius: 0.65rem;
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-weight: 600;
+      font-size: 0.88rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-pick-folder:hover {
+      background: rgba(56, 189, 248, 0.25);
+      border-color: var(--accent);
+      color: #fff;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(56, 189, 248, 0.3);
+    }
+
+    .btn-pick-folder input[type="file"] {
+      display: none;
+    }
+
+    /* Layout principal */
+    .app-main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 1.25rem;
+      min-height: 0;
+    }
+
+    @media (max-width: 992px) {
+      .app-main {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Painéis */
+    .panel {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 1rem;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--panel-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+    }
+
+    .panel-title {
+      font-size: 0.82rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .count-badge {
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0.25rem 0.6rem;
+      border-radius: 999px;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+
+    /* Filtro de pesquisa */
+    .search-wrap {
+      padding: 0.85rem 1.25rem;
+      border-bottom: 1px solid var(--panel-border);
+    }
+
+    .search-wrap input {
+      width: 100%;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--panel-border);
+      border-radius: 0.55rem;
+      padding: 0.55rem 0.85rem 0.55rem 2.2rem;
+      color: #e2e8f0;
+      font-size: 0.85rem;
+      transition: all 0.2s;
+    }
+
+    .search-wrap input:focus {
+      outline: none;
+      border-color: var(--accent);
+      background: rgba(15, 23, 42, 0.85);
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+    }
+
+    .search-wrap input::placeholder {
+      color: #64748b;
+    }
+
+    .search-wrap {
+      position: relative;
+    }
+
+    .search-wrap .bi-search {
+      position: absolute;
+      left: 2rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #64748b;
+      font-size: 0.85rem;
+      pointer-events: none;
+    }
+
+    /* Lista de ficheiros */
+    .file-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0.5rem;
+      list-style: none;
+      margin: 0;
+      max-height: calc(100vh - 280px);
+    }
+
+    @media (max-width: 992px) {
+      .file-list { max-height: 40vh; }
+    }
+
+    .file-list::-webkit-scrollbar {
+      width: 6px;
+    }
+    .file-list::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .file-list::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.25);
+      border-radius: 3px;
+    }
+    .file-list::-webkit-scrollbar-thumb:hover {
+      background: rgba(148, 163, 184, 0.45);
+    }
+
+    .file-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.7rem 0.85rem;
+      border-radius: 0.6rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      color: #cbd5e1;
+      font-size: 0.85rem;
+      border: 1px solid transparent;
+      margin-bottom: 2px;
+    }
+
+    .file-item:hover {
+      background: rgba(56, 189, 248, 0.08);
+      color: #f1f5f9;
+    }
+
+    .file-item.active {
+      background: var(--accent-soft);
+      border-color: rgba(56, 189, 248, 0.4);
+      color: #fff;
+      font-weight: 500;
+      box-shadow: inset 0 0 0 1px rgba(56, 189, 248, 0.1);
+    }
+
+    .file-item .bi {
+      font-size: 1rem;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .file-item .file-name {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .empty-list {
+      text-align: center;
+      padding: 2.5rem 1rem;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+
+    .empty-list .bi {
+      font-size: 2.25rem;
+      display: block;
+      margin-bottom: 0.75rem;
+      opacity: 0.4;
+    }
+
+    /* Visualizador */
+    .viewer-body {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      position: relative;
+      min-height: 400px;
+      background:
+        radial-gradient(circle at center, rgba(56, 189, 248, 0.04), transparent 70%),
+        repeating-conic-gradient(rgba(148, 163, 184, 0.04) 0% 25%, transparent 0% 50%)
+          0 0 / 24px 24px;
+    }
+
+    .viewer-image {
+      max-width: 100%;
+      max-height: calc(100vh - 220px);
+      border-radius: 0.75rem;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(148, 163, 184, 0.15);
+      animation: fadeIn 0.35s ease;
+      object-fit: contain;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.98); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+
+    .viewer-empty {
+      text-align: center;
+      color: var(--text-muted);
+      max-width: 400px;
+    }
+
+    .viewer-empty .bi {
+      font-size: 3.5rem;
+      display: block;
+      margin-bottom: 1rem;
+      background: linear-gradient(135deg, #38bdf8, #6366f1);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      opacity: 0.7;
+    }
+
+    .viewer-empty h5 {
+      font-weight: 600;
+      color: #cbd5e1;
+      margin-bottom: 0.5rem;
+    }
+
+    .viewer-empty p {
+      font-size: 0.85rem;
+      margin: 0;
+      line-height: 1.6;
+    }
+
+    /* Info da imagem */
+    .image-meta {
+      position: absolute;
+      bottom: 0.85rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid var(--panel-border);
+      border-radius: 999px;
+      padding: 0.35rem 0.9rem;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      backdrop-filter: blur(8px);
+      white-space: nowrap;
+      max-width: 90%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .image-meta strong {
+      color: var(--accent);
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-wrapper">
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="brand">
+      <div class="brand-icon">
+        <i class="bi bi-image-fill"></i>
+      </div>
+      <div>
+        <h1 class="brand-title">Visualizador RCF</h1>
+        <p class="brand-subtitle">Imagens de discriminação de materiais</p>
+      </div>
+    </div>
+
+    <label class="btn-pick-folder">
+      <i class="bi bi-folder2-open"></i>
+      <span>Selecionar pasta</span>
+      <input type="file" id="folderInput" webkitdirectory directory multiple accept="image/png">
+    </label>
+  </header>
+
+  <!-- Main -->
+  <main class="app-main">
+
+    <!-- Painel esquerdo -->
+    <section class="panel">
+      <div class="panel-header">
+        <h2 class="panel-title">
+          <i class="bi bi-files"></i> Ficheiros PNG
+        </h2>
+        <span class="count-badge" id="fileCount">0</span>
+      </div>
+
+      <div class="search-wrap">
+        <i class="bi bi-search"></i>
+        <input type="text" id="searchInput" placeholder="Filtrar ficheiros..." autocomplete="off">
+      </div>
+
+      <ul class="file-list" id="fileList">
+        <li class="empty-list">
+          <i class="bi bi-inbox"></i>
+          Nenhuma pasta selecionada.<br>
+          <span style="font-size:0.78rem;">Clique em <strong>Selecionar pasta</strong>.</span>
+        </li>
+      </ul>
+    </section>
+
+    <!-- Painel direito (visualizador) -->
+    <section class="panel">
+      <div class="panel-header">
+        <h2 class="panel-title">
+          <i class="bi bi-eye"></i> Pré-visualização
+        </h2>
+        <span class="count-badge" id="viewerLabel">—</span>
+      </div>
+
+      <div class="viewer-body" id="viewer">
+        <div class="viewer-empty">
+          <i class="bi bi-images"></i>
+          <h5>Nenhuma imagem selecionada</h5>
+          <p>Selecione uma pasta e depois clique num ficheiro PNG na lista à esquerda.</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- jQuery + Bootstrap -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+$(function () {
+
+  /** @type {{name:string, file:File, url:string}[]} */
+  let allImages = [];   // todas as imagens PNG da pasta
+  let currentUrl = null;
+
+  // ---------- Helpers ----------
+  function revokeCurrentUrl() {
+    if (currentUrl) {
+      URL.revokeObjectURL(currentUrl);
+      currentUrl = null;
+    }
+  }
+
+  function revokeAll() {
+    allImages.forEach(f => URL.revokeObjectURL(f.url));
+  }
+
+  function fmtBytes(b) {
+    if (b < 1024) return b + ' B';
+    if (b < 1024 * 1024) return (b / 1024).toFixed(1) + ' KB';
+    return (b / (1024 * 1024)).toFixed(2) + ' MB';
+  }
+
+  // ---------- Render ----------
+  function renderList(filter = '') {
+    const q = filter.trim().toLowerCase();
+    const visible = q
+      ? allImages.filter(f => f.name.toLowerCase().includes(q))
+      : allImages;
+
+    $('#fileCount').text(allImages.length);
+
+    const $list = $('#fileList').empty();
+
+    if (allImages.length === 0) {
+      $list.append(
+        '<li class="empty-list"><i class="bi bi-inbox"></i>' +
+        'Nenhuma imagem PNG encontrada.<br>' +
+        '<span style="font-size:0.78rem;">Selecione uma pasta com ficheiros <code>.png</code>.</span></li>'
+      );
+      return;
+    }
+
+    if (visible.length === 0) {
+      $list.append(
+        '<li class="empty-list"><i class="bi bi-search"></i>' +
+        'Sem resultados para "<strong>' + $('<div>').text(filter).html() + '</strong>".</li>'
+      );
+      return;
+    }
+
+    visible.forEach(function (f) {
+      const idx = allImages.indexOf(f);
+      $('<li>')
+        .addClass('file-item')
+        .attr('data-idx', idx)
+        .html(
+          '<i class="bi bi-file-earmark-image"></i>' +
+          '<span class="file-name" title="' + $('<div>').text(f.name).html() + '">' +
+            $('<div>').text(f.name).html() +
+          '</span>'
+        )
+        .appendTo($list);
+    });
+
+    // Re-aplicar destaque ao item ativo (se ainda visível)
+    const activeIdx = $('#viewer').data('idx');
+    if (activeIdx !== undefined && allImages[activeIdx]) {
+      $list.find('.file-item[data-idx="' + activeIdx + '"]').addClass('active');
+    }
+  }
+
+  function showImage(idx) {
+    const f = allImages[idx];
+    if (!f) return;
+
+    $('#viewer').data('idx', idx);
+    $('#viewerLabel').text(f.name);
+
+    // Destaque na lista
+    $('#fileList .file-item').removeClass('active');
+    $('#fileList .file-item[data-idx="' + idx + '"]').addClass('active');
+
+    // Revogar URL anterior e criar novo
+    revokeCurrentUrl();
+    currentUrl = f.url;
+
+    const $img = $('<img>')
+      .addClass('viewer-image')
+      .attr('src', f.url)
+      .attr('alt', f.name);
+
+    const $meta = $('<div>')
+      .addClass('image-meta')
+      .html('<strong>' + $('<div>').text(f.name).html() + '</strong> &middot; ' + fmtBytes(f.file.size));
+
+    $('#viewer').empty().append($img).append($meta);
+
+    $img.on('load', function () {
+      const w = this.naturalWidth, h = this.naturalHeight;
+      $meta.append(' &middot; ' + w + ' × ' + h + ' px');
+    });
+  }
+
+  // ---------- Eventos ----------
+
+  // Seleção de pasta → filtrar só .png
+  $('#folderInput').on('change', function (e) {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    revokeAll();
+    allImages = [];
+    $('#viewer').removeData('idx');
+    $('#viewerLabel').text('—');
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (/\.png$/i.test(file.name)) {
+        allImages.push({
+          name: file.name,
+          file: file,
+          url: URL.createObjectURL(file)
+        });
+      }
+    }
+
+    // Ordenar alfabeticamente
+    allImages.sort((a, b) => a.name.localeCompare(b.name, 'pt', { numeric: true }));
+
+    $('#searchInput').val('');
+    renderList();
+
+    if (allImages.length > 0) {
+      showImage(0);
+    } else {
+      $('#viewer').html(
+        '<div class="viewer-empty">' +
+        '<i class="bi bi-exclamation-circle"></i>' +
+        '<h5>Nenhuma imagem PNG</h5>' +
+        '<p>A pasta selecionada não contém ficheiros <code>.png</code>.</p>' +
+        '</div>'
+      );
+    }
+  });
+
+  // Clique num ficheiro
+  $('#fileList').on('click', '.file-item', function () {
+    showImage(parseInt($(this).data('idx'), 10));
+  });
+
+  // Filtro de pesquisa (com debounce simples)
+  let searchTimer = null;
+  $('#searchInput').on('input', function () {
+    const val = this.value;
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => renderList(val), 120);
+  });
+
+  // Libertar URLs ao sair
+  window.addEventListener('beforeunload', function () {
+    revokeAll();
+  });
+});
+</script>
+</body>
+</html>
